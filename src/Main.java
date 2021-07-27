@@ -114,10 +114,11 @@ public class Main {
             int speedValue = sliderSpeed.getValue() - 50;
             int limit = speedValue*6000/50;
 
-            if(beforeValue != value && ((baseValue - value) >= limit)){
+            if ((beforeValue != value) && ((baseValue > value && (value - baseValue) <= limit)) || ((baseValue < value && (value - baseValue) >= limit))) {
                 baseValue = value;
                 robot.mouseWheel(beforeValue > value ? -1 : 1);
             }
+
             lblValue.setText(String.valueOf(value));
         }
     }
