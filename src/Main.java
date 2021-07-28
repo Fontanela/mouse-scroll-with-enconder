@@ -1,50 +1,97 @@
 import java.awt.*;
-import java.util.Scanner;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.*;
+import java.util.Timer;
 import javax.swing.*;
 import com.fazecast.jSerialComm.*;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
 
 public class Main {
-    private static Label lblValue, lblStatus;
-    private static JSlider sliderSpeed;
+    private static final String XLM_FILE = "./config.xml";
+    public static Label lblValue, lblStatus, lblSetSpeed;
+    public static JSlider sliderSpeed;
+    private static TrayIcon trayIcon = null;
+    static SystemTray tray = SystemTray.getSystemTray();
+    private static JFrame window;
+    private static  Element eElement;
+    private static JComboBox<Object> comboPorts;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ParserConfigurationException, IOException, SAXException {
         //Create window
-        JFrame window = new JFrame();
+        window = new JFrame();
         window.setSize(400, 250);
         window.setLayout(null);
         window.setLocationRelativeTo(null);
         window.setResizable(false);
+        window.setTitle("Configuração do encoder");
+        Image icon = Toolkit.getDefaultToolkit().getImage("./img/icon.png");
+        window.setIconImage(icon);
+        window.addWindowListener(new WindowAdapter() {// Window close event
+            public void windowClosing(WindowEvent e) {
+                window.setVisible(false);
+                miniTray();
+            }
+
+            public void windowIconified(WindowEvent e) {// Window minimized event
+                window.setVisible(false);
+                miniTray();
+            }
+        });
+
+        InputStream file = new FileInputStream(XLM_FILE);
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        DocumentBuilder db = dbf.newDocumentBuilder();
+        Document doc = db.parse(file);
+        doc.getDocumentElement().normalize();
+        eElement = doc.getDocumentElement();
+
+        String defaultPort = eElement.getElementsByTagName("port").item(0).getTextContent();
+        int defaultSpeed = Integer.parseInt(eElement.getElementsByTagName("speed").item(0).getTextContent());
+
+        doc.cloneNode(true);
 
         //List of ports
         SerialPort[] ports = SerialPort.getCommPorts();
 
-        JLabel lblSelectPort = new JLabel("Select encoder port: ");
+        JLabel lblSelectPort = new JLabel("Selecione a porta: ");
         lblSelectPort.setBounds(20, 20, 150, 20);
         window.add(lblSelectPort);
 
-        JComboBox<Object> comboPorts = new JComboBox<>();
+        comboPorts = new JComboBox<>();
         comboPorts.setBounds(20,40,150,20);
-        //Populates combo
+        // Populates combo
         for (SerialPort port : ports) {
             comboPorts.addItem(port.getSystemPortName());
         }
         comboPorts.addActionListener(e -> {
             SerialPort port = findPort((String) comboPorts.getSelectedItem(), ports);
             try {
+                save(doc);
                 start(port);
-            } catch (AWTException awtException) {
+            } catch (AWTException | FileNotFoundException awtException) {
                 awtException.printStackTrace();
             }
         });
         window.add(comboPorts);
 
-        lblStatus = new Label("Select encoder port: ");
+        lblStatus = new Label("");
         lblStatus.setBounds(20, 60, 150, 20);
         window.add(lblStatus);
-
-        JLabel lblSetSpeed = new JLabel("Set encoder speed: ");
-        lblSetSpeed.setBounds(200, 20, 150, 20);
-        window.add(lblSetSpeed);
 
         sliderSpeed = new JSlider();
         sliderSpeed.setBounds(200, 45, 180, 60);
@@ -53,9 +100,18 @@ public class Main {
         sliderSpeed.setMajorTickSpacing(25);
         sliderSpeed.setMinorTickSpacing(10);
         sliderSpeed.setPaintLabels(true);
+        sliderSpeed.setValue(defaultSpeed);
+        sliderSpeed.addChangeListener(e -> {
+            lblSetSpeed.setText("Velocidade: " + sliderSpeed.getValue());
+            save(doc);
+        });
         window.add(sliderSpeed);
 
-        JLabel lblUpdatedValue = new JLabel("Encoder value: ");
+        lblSetSpeed = new Label("Velocidade: " + sliderSpeed.getValue());
+        lblSetSpeed.setBounds(200, 20, 150, 20);
+        window.add(lblSetSpeed);
+
+        JLabel lblUpdatedValue = new JLabel("Valor do encoder: ");
         lblUpdatedValue.setBounds(20, 90, 150, 20);
         window.add(lblUpdatedValue);
 
@@ -66,10 +122,11 @@ public class Main {
 
         window.setVisible(true);
 
-        comboPorts.setSelectedItem("COM3");
+        comboPorts.setSelectedItem(defaultPort);
 
         SerialPort port = findPort((String) comboPorts.getSelectedItem(), ports);
         try {
+            save(doc);
             start(port);
         } catch (AWTException awtException) {
             awtException.printStackTrace();
@@ -85,41 +142,77 @@ public class Main {
         return ports[i];
     }
 
-    private static void start(SerialPort serialPort) throws AWTException {
+    private static void save(Document doc){
+        eElement.getElementsByTagName("port").item(0).setTextContent((String) comboPorts.getSelectedItem());
+        eElement.getElementsByTagName("speed").item(0).setTextContent(String.valueOf(sliderSpeed.getValue()));
+        try{
+            writeXml(doc);
+        } catch (IOException | TransformerException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void start(SerialPort serialPort) throws AWTException, FileNotFoundException {
         if(serialPort.openPort()) {
             lblStatus.setForeground(Color.green);
-            lblStatus.setText("Port opened successfully.");
+            lblStatus.setText("Porta aberta com sucesso.");
             System.out.println(lblStatus.getText());
         }
         else {
             lblStatus.setForeground(Color.red);
-            lblStatus.setText("Unable to open the port.");
+            lblStatus.setText("Não foi possível abrir a porta solicita.");
             System.out.println(lblStatus.getText());
             return;
         }
+        serialPort.setComPortParameters(9600, Byte.SIZE, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
         serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 0, 0);
 
+        Runtime.getRuntime().addShutdownHook(new Thread(serialPort::closePort));
+
+        var timer = new Timer();
+        var timedSchedule = new TimerScheduleHandler();
+
+        serialPort.addDataListener(timedSchedule);
+
+        timer.schedule(timedSchedule, 0, 1000);
+    }
+
+    public static void scroll(boolean up) throws AWTException {
         Robot robot = new Robot();
-        Scanner data = new Scanner(serialPort.getInputStream());
-        int value = 0;
+        robot.mouseWheel(up ? -1 : 1);
+    }
 
-        int baseValue = 0;
-        while(true){
-            int beforeValue = value;
+    private static void miniTray() {// Minimize the window to the taskbar tray
+        ImageIcon trayImg = new ImageIcon("./img/icon.png");// Tray icon
 
-            try{value = Integer.parseInt(data.nextLine());}catch(Exception e){
-                System.out.println(e.getMessage());
+        trayIcon = new TrayIcon(trayImg.getImage(), "Configuração do encoder", new PopupMenu());
+        trayIcon.setImageAutoSize(true);
+        trayIcon.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    tray.remove(trayIcon);
+                    window.setVisible(true);
+                    window.setExtendedState(JFrame.NORMAL);
+                    window.toFront();
+                }
             }
+        });
 
-            int speedValue = sliderSpeed.getValue() - 50;
-            int limit = speedValue*6000/50;
-
-            if ((beforeValue != value) && ((baseValue > value && (value - baseValue) <= limit)) || ((baseValue < value && (value - baseValue) >= limit))) {
-                baseValue = value;
-                robot.mouseWheel(beforeValue > value ? -1 : 1);
-            }
-
-            lblValue.setText(String.valueOf(value));
+        try {
+            tray.add(trayIcon);
+        } catch (AWTException e1) {
+            e1.printStackTrace();
         }
+    }
+
+    // write doc to output stream
+    private static void writeXml(Document doc) throws TransformerException, UnsupportedEncodingException {
+        Transformer tf = TransformerFactory.newInstance().newTransformer();
+        tf.setOutputProperty(OutputKeys.METHOD, "xml");
+        tf.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+
+        DOMSource domSource = new DOMSource(doc);
+        StreamResult sr = new StreamResult(new File(XLM_FILE));
+        tf.transform(domSource, sr);
     }
 }
