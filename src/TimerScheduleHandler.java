@@ -42,14 +42,14 @@ public class TimerScheduleHandler extends TimerTask implements SerialPortDataLis
             }
 
             if (go) {
-                int speedValue = Main.sliderSpeed.getValue() - 100;
-                int limit = speedValue * 100 / 100;
+                int speedValue = Main.sliderSpeed.getValue() - Main.sliderSize;
+                int limit = speedValue * Main.limitThreshold / Main.sliderSize;
 
-                Main.lblValue.setText((intValue > 0 ? count++ : count--) + "");
+                Main.lblValue.setText((intValue > 0 ? count-- : count++) + "");
                 if (( Math.abs(baseValue - count) >= Math.abs(limit))) {
                     baseValue = count;
                     try {
-                        Main.scroll(intValue > 0);
+                        Main.scroll(!(intValue > 0));
                     } catch (AWTException e) {
                         e.printStackTrace();
                     }

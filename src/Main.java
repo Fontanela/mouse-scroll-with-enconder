@@ -25,6 +25,7 @@ public class Main {
     private static final String XLM_FILE = "./config.xml";
     public static Label lblValue, lblStatus, lblSetSpeed;
     public static JSlider sliderSpeed;
+    public static int limitThreshold, sliderSize;
     private static TrayIcon trayIcon = null;
     static SystemTray tray = SystemTray.getSystemTray();
     private static JFrame window;
@@ -60,8 +61,11 @@ public class Main {
         doc.getDocumentElement().normalize();
         eElement = doc.getDocumentElement();
 
+        limitThreshold = Integer.parseInt(eElement.getElementsByTagName("limitThreshold").item(0).getTextContent());
+
         String defaultPort = eElement.getElementsByTagName("port").item(0).getTextContent();
         int defaultSpeed = Integer.parseInt(eElement.getElementsByTagName("speed").item(0).getTextContent());
+        sliderSize = Integer.parseInt(eElement.getElementsByTagName("sliderSize").item(0).getTextContent());
 
         doc.cloneNode(true);
 
@@ -101,6 +105,7 @@ public class Main {
         sliderSpeed.setMinorTickSpacing(10);
         sliderSpeed.setPaintLabels(true);
         sliderSpeed.setValue(defaultSpeed);
+        sliderSpeed.setMaximum(sliderSize);
         sliderSpeed.addChangeListener(e -> {
             lblSetSpeed.setText("Velocidade: " + sliderSpeed.getValue());
             save(doc);
@@ -119,6 +124,8 @@ public class Main {
         lblValue.setFont(new Font("Arial", Font.BOLD, 50));
         lblValue.setBounds(20, 120, 400, 80);
         window.add(lblValue);
+
+
 
         window.setVisible(true);
 
@@ -145,6 +152,8 @@ public class Main {
     private static void save(Document doc){
         eElement.getElementsByTagName("port").item(0).setTextContent((String) comboPorts.getSelectedItem());
         eElement.getElementsByTagName("speed").item(0).setTextContent(String.valueOf(sliderSpeed.getValue()));
+        eElement.getElementsByTagName("sliderSize").item(0).setTextContent(String.valueOf(sliderSize));
+        eElement.getElementsByTagName("limitThreshold").item(0).setTextContent(String.valueOf(limitThreshold));
         try{
             writeXml(doc);
         } catch (IOException | TransformerException e) {

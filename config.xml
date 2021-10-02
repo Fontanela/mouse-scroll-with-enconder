@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?><configuration>
-  <port>COM3</port>
-  <speed>50</speed>
+  <port>COM1</port>
+  <speed>63</speed>
+  <limitThreshold>100</limitThreshold>
+  <sliderSize>100</sliderSize>
 </configuration>
