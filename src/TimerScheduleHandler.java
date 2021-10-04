@@ -1,20 +1,14 @@
 import java.awt.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.TimerTask;
 import com.fazecast.jSerialComm.*;
 
-public class TimerScheduleHandler extends TimerTask implements SerialPortDataListener{
-
-    private int count = 0, baseValue = 0,  intValue = 0;
+public class TimerScheduleHandler implements SerialPortDataListener{
+    private int count = 0, baseValue = 0,  intValue = 0, beforeIntValue = 0;
+    private String messages = "";
 
     // Constructor
     public TimerScheduleHandler() {
-    }
-
-    // Override run method on TimerTask
-    @Override
-    public void run(){
     }
 
     @Override
@@ -24,32 +18,40 @@ public class TimerScheduleHandler extends TimerTask implements SerialPortDataLis
 
     @Override
     public void serialEvent(SerialPortEvent serialPortEvent) {
-        boolean go = false;
         byte[] initialData = serialPortEvent.getReceivedData();
-        byte[] data;
-        int bInt = intValue;
+        String cValue = "";
 
-        data = initialData;
         try {
-            intValue = Integer.parseInt(new String(data, StandardCharsets.UTF_8).replace("\r\n", ""));
+            messages += new String(initialData);
+            while (messages.contains("\n")) {
+                String[] message = messages.split("\\n", 2);
+                messages = (message.length > 1) ? message[1] : "";
+                cValue = message[0];
+                //System.out.println("Message: " + message[0]);
+            }
+            intValue = Integer.parseInt(new String(cValue.trim()));
+            System.out.println("Valor: " + intValue);
+            /*System.out.println("Antes: " + beforeIntValue);
+            System.out.println("Conta: " + Math.abs(beforeIntValue - intValue));
+            System.out.println();*/
 
-            go = true;
-        } catch (NumberFormatException ignored) {
-        }
+            for(int i = 0; i < Math.abs(beforeIntValue - intValue); i++){
+                int speedValue = Main.sliderSpeed.getValue() - Main.sliderSize;
+                int limit = speedValue * Main.limitThreshold / Main.sliderSize;
 
-        if (go) {
-            int speedValue = Main.sliderSpeed.getValue() - Main.sliderSize;
-            int limit = speedValue * Main.limitThreshold / Main.sliderSize;
-
-            Main.lblValue.setText((intValue > 0 ? count-- : count++) + "");
-            if (( Math.abs(baseValue - count) >= Math.abs(limit))) {
-                baseValue = count;
-                try {
-                    Main.scroll(!(intValue > 0));
-                } catch (AWTException e) {
-                    e.printStackTrace();
+                Main.lblValue.setText(((beforeIntValue - intValue) > 0 ? count-- : count++) + "");
+                if (( Math.abs(baseValue - count) >= Math.abs(limit))) {
+                    baseValue = count;
+                    try {
+                        Main.scroll(!((beforeIntValue - intValue) > 0));
+                    } catch (AWTException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
+            beforeIntValue = intValue;
+            //intValue = Integer.parseInt(new String(data, StandardCharsets.UTF_8).replace("\r\n", ""));
+        } catch (NumberFormatException ignored) {
         }
     }
 }

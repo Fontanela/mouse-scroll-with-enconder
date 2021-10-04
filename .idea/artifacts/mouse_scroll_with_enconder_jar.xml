@@ -1,14 +1,10 @@
 <component name="ArtifactManager">
-  <artifact type="jar" build-on-make="true" name="configuracoes-encoder:jar">
-    <output-path>$USER_HOME$/Documents/configuracoes</output-path>
+  <artifact type="jar" build-on-make="true" name="mouse-scroll-with-enconder:jar">
+    <output-path>$PROJECT_DIR$/out</output-path>
     <root id="archive" name="mouse-scroll-with-enconder.jar">
       <element id="module-output" name="mouse-scroll-with-enconder" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/miglayout-swing.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/miglayout-core.jar" path-in-jar="/" />
-      <element id="file-copy" path="$PROJECT_DIR$/lib/jSerialComm-2.7.0.jar" />
-      <element id="directory" name="img">
-        <element id="file-copy" path="$PROJECT_DIR$/img/icon.png" />
-      </element>
     </root>
   </artifact>
 </component>

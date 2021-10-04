@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?><configuration>
   <port>COM4</port>
-  <speed>63</speed>
+  <speed>10</speed>
   <limitThreshold>100</limitThreshold>
   <sliderSize>100</sliderSize>
 </configuration>
