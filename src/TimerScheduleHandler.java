@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.TimerTask;
 import com.fazecast.jSerialComm.*;
 
@@ -23,50 +24,32 @@ public class TimerScheduleHandler extends TimerTask implements SerialPortDataLis
 
     @Override
     public void serialEvent(SerialPortEvent serialPortEvent) {
-        if (serialPortEvent.getEventType() == SerialPort.LISTENING_EVENT_DATA_RECEIVED) {
-            boolean go = false;
+        boolean go = false;
+        byte[] initialData = serialPortEvent.getReceivedData();
+        byte[] data;
+        int bInt = intValue;
 
-            byte[] initialData = serialPortEvent.getReceivedData();
-            byte[] data;
+        data = initialData;
+        try {
+            intValue = Integer.parseInt(new String(data, StandardCharsets.UTF_8).replace("\r\n", ""));
 
-            try {
-                if(initialData.length > 4){
-                    data = getSliceOfArray(initialData, 0, 4);
-                }else{
-                    data = initialData;
-                }
+            go = true;
+        } catch (NumberFormatException ignored) {
+        }
 
-                intValue = Integer.parseInt(new String(data, StandardCharsets.UTF_8).replace("\r\n", ""));
-                go = true;
-            } catch (NumberFormatException ignored) {
-            }
+        if (go) {
+            int speedValue = Main.sliderSpeed.getValue() - Main.sliderSize;
+            int limit = speedValue * Main.limitThreshold / Main.sliderSize;
 
-            if (go) {
-                int speedValue = Main.sliderSpeed.getValue() - Main.sliderSize;
-                int limit = speedValue * Main.limitThreshold / Main.sliderSize;
-
-                Main.lblValue.setText((intValue > 0 ? count-- : count++) + "");
-                if (( Math.abs(baseValue - count) >= Math.abs(limit))) {
-                    baseValue = count;
-                    try {
-                        Main.scroll(!(intValue > 0));
-                    } catch (AWTException e) {
-                        e.printStackTrace();
-                    }
+            Main.lblValue.setText((intValue > 0 ? count-- : count++) + "");
+            if (( Math.abs(baseValue - count) >= Math.abs(limit))) {
+                baseValue = count;
+                try {
+                    Main.scroll(!(intValue > 0));
+                } catch (AWTException e) {
+                    e.printStackTrace();
                 }
             }
         }
-    }
-
-    public static byte[] getSliceOfArray(byte[] arr, int start, int end)
-    {
-        // Get the slice of the Array
-        byte[] slice = new byte[end - start];
-
-        // Copy elements of arr to slice
-        System.arraycopy(arr, start, slice, 0, slice.length);
-
-        // return the slice
-        return slice;
     }
 }

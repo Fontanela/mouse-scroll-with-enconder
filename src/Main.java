@@ -17,6 +17,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
@@ -173,17 +174,16 @@ public class Main {
             System.out.println(lblStatus.getText());
             return;
         }
-        serialPort.setComPortParameters(9600, Byte.SIZE, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
-        serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 0, 0);
+        serialPort.setComPortParameters(9600, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
+       // serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 0, 0);
 
-        Runtime.getRuntime().addShutdownHook(new Thread(serialPort::closePort));
+        //Runtime.getRuntime().addShutdownHook(new Thread(serialPort::closePort));
 
-        var timer = new Timer();
+        //var timer = new Timer();
         var timedSchedule = new TimerScheduleHandler();
 
+        //timer.schedule(timedSchedule, 0, 1);
         serialPort.addDataListener(timedSchedule);
-
-        timer.schedule(timedSchedule, 0, 1000);
     }
 
     public static void scroll(boolean up) throws AWTException {
