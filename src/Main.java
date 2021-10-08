@@ -27,6 +27,7 @@ public class Main {
     public static Label lblValue, lblStatus, lblSetSpeed;
     public static JSlider sliderSpeed;
     public static int limitThreshold, sliderSize;
+    public static boolean testing = false;
     private static TrayIcon trayIcon = null;
     static SystemTray tray = SystemTray.getSystemTray();
     private static JFrame window;
@@ -63,6 +64,7 @@ public class Main {
         eElement = doc.getDocumentElement();
 
         limitThreshold = Integer.parseInt(eElement.getElementsByTagName("limitThreshold").item(0).getTextContent());
+        testing = Boolean.parseBoolean(eElement.getElementsByTagName("testing").item(0).getTextContent());
 
         String defaultPort = eElement.getElementsByTagName("port").item(0).getTextContent();
         int defaultSpeed = Integer.parseInt(eElement.getElementsByTagName("speed").item(0).getTextContent());
@@ -119,14 +121,14 @@ public class Main {
 
         JLabel lblUpdatedValue = new JLabel("Valor do encoder: ");
         lblUpdatedValue.setBounds(20, 90, 150, 20);
+        lblUpdatedValue.setVisible(testing);
         window.add(lblUpdatedValue);
 
         lblValue = new Label("0", SwingConstants.CENTER);
         lblValue.setFont(new Font("Arial", Font.BOLD, 50));
         lblValue.setBounds(20, 120, 400, 80);
         window.add(lblValue);
-
-
+        lblValue.setVisible(testing);
 
         window.setVisible(true);
 
@@ -155,6 +157,7 @@ public class Main {
         eElement.getElementsByTagName("speed").item(0).setTextContent(String.valueOf(sliderSpeed.getValue()));
         eElement.getElementsByTagName("sliderSize").item(0).setTextContent(String.valueOf(sliderSize));
         eElement.getElementsByTagName("limitThreshold").item(0).setTextContent(String.valueOf(limitThreshold));
+        eElement.getElementsByTagName("testing").item(0).setTextContent(String.valueOf(testing));
         try{
             writeXml(doc);
         } catch (IOException | TransformerException e) {
@@ -175,14 +178,8 @@ public class Main {
             return;
         }
         serialPort.setComPortParameters(9600, 8, SerialPort.ONE_STOP_BIT, SerialPort.NO_PARITY);
-       // serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 0, 0);
 
-        //Runtime.getRuntime().addShutdownHook(new Thread(serialPort::closePort));
-
-        //var timer = new Timer();
         var timedSchedule = new TimerScheduleHandler();
-
-        //timer.schedule(timedSchedule, 0, 1);
         serialPort.addDataListener(timedSchedule);
     }
 
